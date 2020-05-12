@@ -14,11 +14,6 @@ locals {
   endpoint_url = "http${var.tls_secret_name != "" ? "s" : ""}://${local.ingress_host}"
 }
 
-data "helm_repository" "toolkit-charts" {
-  name = "toolkit-charts"
-  url  = "https://ibm-garage-cloud.github.io/toolkit-charts/"
-}
-
 resource "null_resource" "swaggereditor_cleanup" {
   provisioner "local-exec" {
     command = "kubectl delete scc privileged-swaggereditor || true"
@@ -33,7 +28,7 @@ resource "helm_release" "swaggereditor" {
   depends_on = [null_resource.swaggereditor_cleanup]
 
   name         = "developer-dashboard"
-  repository   = data.helm_repository.toolkit-charts.name
+  repository   = "https://ibm-garage-cloud.github.io/toolkit-charts/"
   chart        = "swaggereditor"
   version      = var.chart_version
   namespace    = var.releases_namespace
@@ -67,7 +62,7 @@ resource "helm_release" "apieditor-config" {
   depends_on = [helm_release.swaggereditor]
 
   name         = "apieditor"
-  repository   = data.helm_repository.toolkit-charts.name
+  repository   = "https://ibm-garage-cloud.github.io/toolkit-charts/"
   chart        = "tool-config"
   namespace    = var.releases_namespace
   force_update = true
