@@ -27,7 +27,7 @@ resource "null_resource" "swaggereditor_cleanup" {
 resource "helm_release" "swaggereditor" {
   depends_on = [null_resource.swaggereditor_cleanup]
 
-  name         = "developer-dashboard"
+  name         = "swaggereditor"
   repository   = "https://ibm-garage-cloud.github.io/toolkit-charts/"
   chart        = "swaggereditor"
   version      = var.chart_version
