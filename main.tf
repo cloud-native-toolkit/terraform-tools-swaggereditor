@@ -85,7 +85,7 @@ resource "helm_release" "apieditor-config" {
 
   set {
     name  = "applicationMenu"
-    value = var.cluster_type != "kubernetes"
+    value = var.cluster_type == "ocp4"
   }
 
   set {
