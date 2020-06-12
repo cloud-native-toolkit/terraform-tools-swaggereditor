@@ -1,5 +1,7 @@
 # Swagger Editor Module
 
+![Verify and release module](https://github.com/ibm-garage-cloud/terraform-tools-swaggereditor/workflows/Verify%20and%20release%20module/badge.svg)
+
 Installs the Swagger Editor from a helm chart as well as a ConfigMap that describes the endpoint
 for the Swagger Editor. 
 
