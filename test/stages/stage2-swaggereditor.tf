@@ -1,5 +1,5 @@
 module "dev_tools_swagger" {
-  source = "github.com/ibm-garage-cloud/terraform-tools-swaggereditor.git"
+  source = "./module"
 
   cluster_ingress_hostname = module.dev_cluster.ingress_hostname
   cluster_config_file      = module.dev_cluster.config_file_path
