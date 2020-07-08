@@ -17,4 +17,14 @@ if [[ -n "${POD_STATUSES}" ]]; then
   exit 1
 fi
 
+if [[ "${CLUSTER_TYPE}" =~ ocp4 ]]; then
+  if kubectl get consolelink tools-apieditor 1> /dev/null 2> /dev/null; then
+    echo "ConsoleLink installed"
+    kubectl get consolelink tools-apieditor
+  else
+    echo "ConsoleLink not found"
+    exit 1
+  fi
+fi
+
 exit 0
