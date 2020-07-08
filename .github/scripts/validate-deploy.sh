@@ -23,6 +23,7 @@ if [[ "${CLUSTER_TYPE}" =~ ocp4 ]]; then
     kubectl get consolelink toolkit-apieditor
   else
     echo "ConsoleLink not found"
+    kubectl get consolelink
     exit 1
   fi
 fi
