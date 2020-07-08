@@ -17,15 +17,4 @@ if [[ -n "${POD_STATUSES}" ]]; then
   exit 1
 fi
 
-set -e
-
-if [[ $(kubectl get pipelines -n "${NAMESPACE}" | wc -l) -eq 0 ]]; then
-  echo "No pipelines found"
-  exit 1
-fi
-if [[ $(kubectl get tasks -n "${NAMESPACE}" | wc -l) -eq 0 ]]; then
-  echo "No pipelines found"
-  exit 1
-fi
-
 exit 0
