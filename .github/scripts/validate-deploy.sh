@@ -20,7 +20,7 @@ fi
 if [[ "${CLUSTER_TYPE}" =~ ocp4 ]]; then
   if kubectl get consolelink tools-apieditor 1> /dev/null 2> /dev/null; then
     echo "ConsoleLink installed"
-    kubectl get consolelink tools-apieditor
+    kubectl get consolelink toolkit-apieditor
   else
     echo "ConsoleLink not found"
     exit 1
