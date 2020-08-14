@@ -11,7 +11,7 @@ locals {
   cluster_type = var.cluster_type == "kubernetes" ? "kubernetes" : "openshift"
   ingress_host = "apieditor-${var.releases_namespace}.${var.cluster_ingress_hostname}"
   name         = "swaggereditor"
-  endpoint_url = "http${var.tls_secret_name != "" ? "s" : ""}://${local.ingress_host}"
+  endpoint_url = "https://${local.ingress_host}"
 }
 
 resource "null_resource" "swaggereditor_cleanup" {
