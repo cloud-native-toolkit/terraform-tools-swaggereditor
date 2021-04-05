@@ -1,4 +1,4 @@
-id: github.com/ibm-garage-cloud/terraform-tools-swaggereditor
+id: github.com/cloud-native-toolkit/terraform-tools-swaggereditor
 name: swaggereditor
 type: terraform
 description: Module to install Swagger editor into a cluster
@@ -7,6 +7,76 @@ tags:
   - devops
   - swagger editor
 versions:
+  - platforms:
+      - kubernetes
+      - ocp3
+      - ocp4
+    dependencies:
+      - id: cluster
+        refs:
+          - source: github.com/ibm-garage-cloud/terraform-ibm-container-platform
+            version: ">= 1.7.0"
+          - source: github.com/ibm-garage-cloud/terraform-ibm-ocp-vpc
+            version: ">= 1.0.0"
+          - source: github.com/ibm-garage-cloud/terraform-k8s-ocp-cluster
+            version: ">= 2.0.0"
+      - id: namespace
+        refs:
+          - source: github.com/ibm-garage-cloud/terraform-k8s-namespace
+            version: ">= 2.1.0"
+    variables:
+      - name: cluster_type
+        moduleRef:
+          id: cluster
+          output: platform.type_code
+        type: string
+        description: The cluster type (openshift or kubernetes)
+      - name: cluster_ingress_hostname
+        moduleRef:
+          id: cluster
+          output: platform.ingress
+        type: string
+        description: Ingress hostname of the cluster.
+      - name: cluster_config_file
+        moduleRef:
+          id: cluster
+          output: config_file_path
+        type: string
+        description: Cluster config file for Kubernetes cluster.
+      - name: tls_secret_name
+        moduleRef:
+          id: cluster
+          output: platform.tls_secret
+        type: string
+        description: The name of the secret containing the tls certificate values
+        default: ""
+        optional: true
+      - name: releases_namespace
+        moduleRef:
+          id: namespace
+          output: name
+          discriminator: tools
+        type: string
+        description: Name of the existing namespace where the Helm Releases will be deployed.
+      - name: image_tag
+        type: string
+        description: The image version tag to use
+        default: v3.8.0
+        optional: true
+      - name: enable_sso
+        type: bool
+        description: Flag indicating if oauth should be applied (only available for OpenShift)
+        default: true
+        optional: true
+      - name: chart_version
+        type: string
+        description: The version of the helm chart that will be installed
+        default: 2.0.0
+        optional: true
+    version: v1.4.2
+    outputs:
+      - name: ingress_host
+        description: The ingress host for the Swagger Editor Console instance
   - platforms:
       - kubernetes
       - ocp3
