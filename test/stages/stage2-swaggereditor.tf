@@ -6,7 +6,5 @@ module "dev_tools_swagger" {
   cluster_type             = module.dev_cluster.platform.type_code
   tls_secret_name          = module.dev_cluster.platform.tls_secret
   releases_namespace       = module.dev_capture_state.namespace
-  image_tag                = "v3.8.0"
   enable_sso               = true
-  chart_version            = "1.3.0"
 }

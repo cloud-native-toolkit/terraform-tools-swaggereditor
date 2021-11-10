@@ -23,6 +23,10 @@ versions:
       refs:
         - source: github.com/ibm-garage-cloud/terraform-k8s-namespace
           version: ">= 2.1.0"
+    - id: console_link_job
+      refs:
+        - source: https://github.com/cloud-native-toolkit/terraform-k8s-console-link-job
+          version: ">= 1.0.0"
   variables:
     - name: cluster_type
       moduleRef:
@@ -45,3 +49,7 @@ versions:
         id: namespace
         output: name
         discriminator: tools
+    - name: toolkit_namespace
+      moduleRef:
+        id: console_link_job
+        output: namespace

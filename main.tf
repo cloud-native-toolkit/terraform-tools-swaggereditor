@@ -7,7 +7,15 @@ locals {
   endpoint_url = "http${var.tls_secret_name != "" ? "s" : ""}://${local.ingress_host}"
 }
 
+resource null_resource print_toolkit_namespace {
+  provisioner "local-exec" {
+    command = "echo 'Toolkit namespace: ${var.toolkit_namespace}'"
+  }
+}
+
 resource "null_resource" "swaggereditor_cleanup" {
+  depends_on = [null_resource.print_toolkit_namespace]
+
   provisioner "local-exec" {
     command = "kubectl delete scc privileged-swaggereditor || true"
 
@@ -21,7 +29,7 @@ resource "helm_release" "swaggereditor" {
   depends_on = [null_resource.swaggereditor_cleanup]
 
   name         = "swaggereditor"
-  repository   = "https://ibm-garage-cloud.github.io/toolkit-charts/"
+  repository   = "https://charts.cloudnativetoolkit.dev"
   chart        = "swaggereditor"
   version      = var.chart_version
   namespace    = var.releases_namespace
@@ -47,47 +55,5 @@ resource "helm_release" "swaggereditor" {
   set {
     name  = "tlsSecretName"
     value = var.tls_secret_name
-  }
-}
-
-resource "null_resource" "delete-consolelink" {
-  count = var.cluster_type != "kubernetes" ? 1 : 0
-
-  provisioner "local-exec" {
-    command = "kubectl delete consolelink -l grouping=garage-cloud-native-toolkit -l app=apieditor || exit 0"
-
-    environment = {
-      KUBECONFIG = var.cluster_config_file
-    }
-  }
-}
-
-resource "helm_release" "apieditor-config" {
-  depends_on = [helm_release.swaggereditor, null_resource.delete-consolelink]
-
-  name         = "apieditor"
-  repository   = "https://ibm-garage-cloud.github.io/toolkit-charts/"
-  chart        = "tool-config"
-  namespace    = var.releases_namespace
-  force_update = true
-
-  set {
-    name  = "url"
-    value = local.endpoint_url
-  }
-
-  set {
-    name  = "applicationMenu"
-    value = var.cluster_type == "ocp4"
-  }
-
-  set {
-    name  = "ingressSubdomain"
-    value = var.cluster_ingress_hostname
-  }
-
-  set {
-    name  = "displayName"
-    value = "Swagger Editor"
   }
 }
