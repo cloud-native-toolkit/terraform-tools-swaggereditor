@@ -41,6 +41,15 @@ resource null_resource swaggereditor_helm {
       KUBECONFIG = var.cluster_config_file
     }
   }
+
+  provisioner "local-exec" {
+    when = destroy
+    command = "${local.bin_dir}/helm template swaggereditor swaggereditor --repo https://charts.cloudnativetoolkit.dev --version ${var.chart_version} -n ${var.releases_namespace} -f ${local.values_file} | kubectl delete -n ${var.releases_namespace} -f -"
+
+    environment = {
+      KUBECONFIG = var.cluster_config_file
+    }
+  }
 }
 
 resource null_resource wait-for-deployment {
