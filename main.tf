@@ -1,93 +1,73 @@
 
 locals {
   tmp_dir      = "${path.cwd}/.tmp"
+  bin_dir      = module.setup_clis.bin_dir
+  values_file  = "${local.tmp_dir}/swaggereditor-values.yaml"
   cluster_type = var.cluster_type == "kubernetes" ? "kubernetes" : "openshift"
-  ingress_host = "apieditor-${var.releases_namespace}.${var.cluster_ingress_hostname}"
   name         = "swaggereditor"
-  endpoint_url = "http${var.tls_secret_name != "" ? "s" : ""}://${local.ingress_host}"
+  swagger_config = {
+    clusterType = local.cluster_type
+    ingressSubdomain = var.cluster_ingress_hostname
+    "sso.enabled" = var.enable_sso
+    tlsSecretName = var.tls_secret_name
+  }
 }
 
-resource "null_resource" "swaggereditor_cleanup" {
+resource null_resource print_toolkit_namespace {
   provisioner "local-exec" {
-    command = "kubectl delete scc privileged-swaggereditor || true"
+    command = "echo 'Toolkit namespace: ${var.toolkit_namespace}'"
+  }
+}
+
+module setup_clis {
+  source = "github.com/cloud-native-toolkit/terraform-util-clis.git"
+
+  clis = ["helm"]
+}
+
+resource local_file swaggereditor_values {
+  content  = yamlencode(local.swagger_config)
+
+  filename = local.values_file
+}
+
+resource null_resource swaggereditor_helm {
+  depends_on = [null_resource.print_toolkit_namespace]
+
+  triggers = {
+    bin_dir = local.bin_dir
+    kubeconfig = var.cluster_config_file
+    chart_version = var.chart_version
+    namespace = var.releases_namespace
+    values_file = local.values_file
+  }
+
+  provisioner "local-exec" {
+    command = "${self.triggers.bin_dir}/helm template swaggereditor swaggereditor --repo https://charts.cloudnativetoolkit.dev --version ${self.triggers.chart_version} -n ${self.triggers.namespace} -f ${self.triggers.values_file} | kubectl apply -n ${self.triggers.namespace} -f -"
 
     environment = {
-      KUBECONFIG = var.cluster_config_file
+      KUBECONFIG = self.triggers.kubeconfig
+    }
+  }
+
+  provisioner "local-exec" {
+    when = destroy
+    command = "${self.triggers.bin_dir}/helm template swaggereditor swaggereditor --repo https://charts.cloudnativetoolkit.dev --version ${self.triggers.chart_version} -n ${self.triggers.namespace} -f ${self.triggers.values_file} | kubectl delete -n ${self.triggers.namespace} -f -"
+
+    environment = {
+      KUBECONFIG = self.triggers.kubeconfig
     }
   }
 }
 
-resource "helm_release" "swaggereditor" {
-  depends_on = [null_resource.swaggereditor_cleanup]
-
-  name         = "swaggereditor"
-  repository   = "https://ibm-garage-cloud.github.io/toolkit-charts/"
-  chart        = "swaggereditor"
-  version      = var.chart_version
-  namespace    = var.releases_namespace
-  force_update = true
-
-  disable_openapi_validation = true
-
-  set {
-    name  = "clusterType"
-    value = local.cluster_type
-  }
-
-  set {
-    name  = "ingressSubdomain"
-    value = var.cluster_ingress_hostname
-  }
-
-  set {
-    name  = "sso.enabled"
-    value = var.enable_sso
-  }
-
-  set {
-    name  = "tlsSecretName"
-    value = var.tls_secret_name
-  }
-}
-
-resource "null_resource" "delete-consolelink" {
-  count = var.cluster_type != "kubernetes" ? 1 : 0
+resource null_resource wait-for-deployment {
+  depends_on = [null_resource.swaggereditor_helm]
 
   provisioner "local-exec" {
-    command = "kubectl delete consolelink -l grouping=garage-cloud-native-toolkit -l app=apieditor || exit 0"
+    command = "kubectl rollout status -n ${var.releases_namespace} deployment/swaggereditor"
 
     environment = {
       KUBECONFIG = var.cluster_config_file
     }
-  }
-}
-
-resource "helm_release" "apieditor-config" {
-  depends_on = [helm_release.swaggereditor, null_resource.delete-consolelink]
-
-  name         = "apieditor"
-  repository   = "https://ibm-garage-cloud.github.io/toolkit-charts/"
-  chart        = "tool-config"
-  namespace    = var.releases_namespace
-  force_update = true
-
-  set {
-    name  = "url"
-    value = local.endpoint_url
-  }
-
-  set {
-    name  = "applicationMenu"
-    value = var.cluster_type == "ocp4"
-  }
-
-  set {
-    name  = "ingressSubdomain"
-    value = var.cluster_ingress_hostname
-  }
-
-  set {
-    name  = "displayName"
-    value = "Swagger Editor"
   }
 }

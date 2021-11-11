@@ -36,5 +36,11 @@ variable "enable_sso" {
 variable "chart_version" {
   type        = string
   description = "The version of the helm chart that will be installed"
-  default     = "2.0.0"
+  default     = "2.1.0"
+}
+
+variable "toolkit_namespace" {
+  type        = string
+  description = "Namespace where the toolkit config jobs run."
+  default     = ""
 }
