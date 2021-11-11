@@ -34,20 +34,28 @@ resource local_file swaggereditor_values {
 resource null_resource swaggereditor_helm {
   depends_on = [null_resource.print_toolkit_namespace]
 
+  triggers = {
+    bin_dir = local.bin_dir
+    kubeconfig = var.cluster_config_file
+    chart_version = var.chart_version
+    namespace = var.releases_namespace
+    values_file = local.values_file
+  }
+
   provisioner "local-exec" {
-    command = "${local.bin_dir}/helm template swaggereditor swaggereditor --repo https://charts.cloudnativetoolkit.dev --version ${var.chart_version} -n ${var.releases_namespace} -f ${local.values_file} | kubectl apply -n ${var.releases_namespace} -f -"
+    command = "${self.triggers.bin_dir}/helm template swaggereditor swaggereditor --repo https://charts.cloudnativetoolkit.dev --version ${self.triggers.chart_version} -n ${self.triggers.namespace} -f ${self.triggers.values_file} | kubectl apply -n ${self.triggers.namespace} -f -"
 
     environment = {
-      KUBECONFIG = var.cluster_config_file
+      KUBECONFIG = self.triggers.kubeconfig
     }
   }
 
   provisioner "local-exec" {
     when = destroy
-    command = "${local.bin_dir}/helm template swaggereditor swaggereditor --repo https://charts.cloudnativetoolkit.dev --version ${var.chart_version} -n ${var.releases_namespace} -f ${local.values_file} | kubectl delete -n ${var.releases_namespace} -f -"
+    command = "${self.triggers.bin_dir}/helm template swaggereditor swaggereditor --repo https://charts.cloudnativetoolkit.dev --version ${self.triggers.chart_version} -n ${self.triggers.namespace} -f ${self.triggers.values_file} | kubectl delete -n ${self.triggers.namespace} -f -"
 
     environment = {
-      KUBECONFIG = var.cluster_config_file
+      KUBECONFIG = self.triggers.kubeconfig
     }
   }
 }
