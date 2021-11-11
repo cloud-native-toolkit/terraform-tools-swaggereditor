@@ -1,10 +1,16 @@
 
 locals {
   tmp_dir      = "${path.cwd}/.tmp"
+  bin_dir      = module.setup_clis.bin_dir
+  values_file  = "${local.tmp_dir}/swaggereditor-values.yaml"
   cluster_type = var.cluster_type == "kubernetes" ? "kubernetes" : "openshift"
-  ingress_host = "apieditor-${var.releases_namespace}.${var.cluster_ingress_hostname}"
   name         = "swaggereditor"
-  endpoint_url = "http${var.tls_secret_name != "" ? "s" : ""}://${local.ingress_host}"
+  swagger_config = {
+    clusterType = local.cluster_type
+    ingressSubdomain = var.cluster_ingress_hostname
+    "sso.enabled" = var.enable_sso
+    tlsSecretName = var.tls_secret_name
+  }
 }
 
 resource null_resource print_toolkit_namespace {
@@ -13,47 +19,26 @@ resource null_resource print_toolkit_namespace {
   }
 }
 
-resource "null_resource" "swaggereditor_cleanup" {
+module setup_clis {
+  source = "github.com/cloud-native-toolkit/terraform-util-clis.git"
+
+  clis = ["helm"]
+}
+
+resource local_file swaggereditor_values {
+  content  = yamlencode(local.swagger_config)
+
+  filename = local.values_file
+}
+
+resource null_resource swaggereditor_helm {
   depends_on = [null_resource.print_toolkit_namespace]
 
   provisioner "local-exec" {
-    command = "kubectl delete scc privileged-swaggereditor || true"
+    command = "${local.bin_dir}/helm template swaggereditor swaggereditor --repo https://charts.cloudnativetoolkit.dev --version ${var.chart_version} -n ${var.releases_namespace} -f ${local.values_file} | kubectl apply -n ${var.releases_namespace} -f -"
 
     environment = {
       KUBECONFIG = var.cluster_config_file
     }
-  }
-}
-
-resource "helm_release" "swaggereditor" {
-  depends_on = [null_resource.swaggereditor_cleanup]
-
-  name         = "swaggereditor"
-  repository   = "https://charts.cloudnativetoolkit.dev"
-  chart        = "swaggereditor"
-  version      = var.chart_version
-  namespace    = var.releases_namespace
-  force_update = true
-
-  disable_openapi_validation = true
-
-  set {
-    name  = "clusterType"
-    value = local.cluster_type
-  }
-
-  set {
-    name  = "ingressSubdomain"
-    value = var.cluster_ingress_hostname
-  }
-
-  set {
-    name  = "sso.enabled"
-    value = var.enable_sso
-  }
-
-  set {
-    name  = "tlsSecretName"
-    value = var.tls_secret_name
   }
 }
