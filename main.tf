@@ -42,3 +42,15 @@ resource null_resource swaggereditor_helm {
     }
   }
 }
+
+resource null_resource wait-for-deployment {
+  depends_on = [null_resource.swaggereditor_helm]
+
+  provisioner "local-exec" {
+    command = "kubectl rollout status -n ${var.releases_namespace} deployment/swaggereditor"
+
+    environment = {
+      KUBECONFIG = var.cluster_config_file
+    }
+  }
+}
